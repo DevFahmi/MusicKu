@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FahmiMusic – Roblox Audio Processor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060e18;--bg2:#0a1525;--bg3:#0f1e30;
+  --blue:#4d9de0;--blue2:#2a6fc4;--blue3:#1a4a8a;
+  --steel:#7ab3e0;--ice:#b8d8f8;--accent:#5cb8ff;
+  --glow:0 0 6px #4d9de066,0 0 18px #4d9de033,0 0 32px #4d9de018;
+  --glowA:0 0 6px #5cb8ff66,0 0 18px #5cb8ff33;
+  --card:#091422;--card2:#0d1e30;
+  --border:#1e3f60;--border2:#2a5580;
+  --text:#a8c8e8;--text-hi:#d4eaff;--text-dim:#3d6080;
+  --fh:'Orbitron',monospace;--fb:'Rajdhani',sans-serif;
+  --r:8px;--t:.22s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:16px;overflow-x:hidden;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:9999}
+body::after{content:'';position:fixed;inset:0;background:linear-gradient(rgba(77,157,224,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(77,157,224,.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0}
+
+/* ─── LOADING ─── */
+#loading{position:fixed;inset:0;background:#020810;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;transition:opacity .9s,visibility .9s}
+#loading.gone{opacity:0;visibility:hidden;pointer-events:none}
+.ld-disk{width:140px;height:140px;position:relative}
+.ld-disk svg{width:100%;height:100%;animation:spin 2.4s linear infinite}
+.ld-glow{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 30px #4d9de0,0 0 60px #4d9de044,0 0 100px #4d9de022;animation:pglow 1.8s ease-in-out infinite alternate}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pglow{from{opacity:.4;transform:scale(.96)}to{opacity:1;transform:scale(1.04)}}
+.ld-title{font-family:var(--fh);font-size:clamp(1.8rem,5vw,2.8rem);font-weight:900;letter-spacing:.2em;color:var(--blue);text-shadow:0 0 12px #4d9de0aa,0 0 30px #4d9de055}
+.ld-sub{color:var(--text-dim);letter-spacing:.3em;font-size:.82rem;text-transform:uppercase}
+.ld-waves{display:flex;align-items:flex-end;gap:5px;height:44px}
+.lwb{width:5px;background:var(--blue);border-radius:3px;animation:wb 1.3s ease-in-out infinite}
+.lwb:nth-child(1){animation-delay:0s}.lwb:nth-child(2){animation-delay:.11s}.lwb:nth-child(3){animation-delay:.22s}.lwb:nth-child(4){animation-delay:.33s}.lwb:nth-child(5){animation-delay:.44s}.lwb:nth-child(6){animation-delay:.33s}.lwb:nth-child(7){animation-delay:.22s}.lwb:nth-child(8){animation-delay:.11s}
+@keyframes wb{0%,100%{height:5px;opacity:.4}50%{height:38px;opacity:1}}
+.ld-ptrack{width:300px;height:3px;background:#111825;border-radius:3px;overflow:hidden;border:1px solid var(--border)}
+.ld-pfill{height:100%;background:linear-gradient(90deg,var(--blue3),var(--blue),var(--accent));width:0%;animation:lf 2.5s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes lf{to{width:100%}}
+.ld-tip{color:var(--text-dim);font-size:.78rem;letter-spacing:.12em;animation:blink 1.2s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ─── LAYOUT ─── */
+#app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 20px 64px}
+
+/* ─── HEADER ─── */
+header{display:flex;align-items:center;justify-content:space-between;padding:22px 0;border-bottom:1px solid var(--border);margin-bottom:44px;flex-wrap:wrap;gap:14px}
+.logo{display:flex;align-items:center;gap:14px;text-decoration:none}
+.logo-disk{width:52px;height:52px;animation:spin 5s linear infinite;filter:drop-shadow(0 0 8px #4d9de0)}
+.logo-name{font-family:var(--fh);font-size:1.55rem;font-weight:900;color:var(--blue);text-shadow:0 0 10px #4d9de0aa;letter-spacing:.12em}
+.logo-tag{font-size:.68rem;letter-spacing:.3em;color:var(--text-dim);text-transform:uppercase}
+.hbadge{background:linear-gradient(135deg,var(--blue3)44,var(--card2));border:1px solid var(--border2);border-radius:20px;padding:6px 16px;font-size:.72rem;letter-spacing:.15em;color:var(--steel);font-family:var(--fh)}
+
+/* ─── SECTION LABEL ─── */
+.sl{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.sl .sn{font-family:var(--fh);font-size:.62rem;letter-spacing:.3em;color:var(--blue);opacity:.6}
+.sl h2{font-family:var(--fh);font-size:1.05rem;font-weight:700;color:var(--blue);text-shadow:0 0 8px #4d9de066}
+.sln{flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent)}
+
+/* ─── UPLOAD ─── */
+#upload-section{margin-bottom:36px}
+.upzone{border:2px dashed var(--border);border-radius:var(--r);padding:56px 20px;text-align:center;transition:var(--t);background:var(--card);position:relative;overflow:hidden;cursor:pointer;user-select:none}
+.upzone::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,var(--blue3)18,transparent 70%);opacity:0;transition:var(--t)}
+.upzone.drag{border-color:var(--blue);box-shadow:var(--glow)}
+.upzone.drag::before{opacity:1}
+.upzone.loaded{border-color:var(--blue2);border-style:solid}
+.up-icon{font-size:3.8rem;margin-bottom:14px;display:block;pointer-events:none}
+.up-title{font-family:var(--fh);font-size:1.05rem;color:var(--accent);margin-bottom:6px;pointer-events:none}
+.up-sub{color:var(--text-dim);font-size:.88rem;margin-bottom:18px;pointer-events:none}
+.up-cta{display:inline-block;background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;padding:11px 30px;border-radius:4px;font-family:var(--fh);font-size:.78rem;letter-spacing:.12em;pointer-events:none}
+.up-fmts{margin-top:14px;color:var(--text-dim);font-size:.76rem;letter-spacing:.08em;pointer-events:none}
+#fileInput{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+
+/* ─── TRACK INFO ─── */
+#track-section{display:none;margin-bottom:36px}
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.tthumb{width:60px;height:60px;background:linear-gradient(135deg,var(--blue3),var(--blue2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;flex-shrink:0;border:1px solid var(--border2);animation:spin 8s linear infinite}
+.tinfo{flex:1;min-width:0}
+.tname{font-family:var(--fh);font-size:.95rem;color:var(--text-hi);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tmeta{display:flex;gap:18px;color:var(--text-dim);font-size:.8rem;flex-wrap:wrap;margin-bottom:12px}
+.wcon{width:100%;height:72px}
+canvas.wc{width:100%;height:100%;border-radius:4px;display:block}
+
+/* ─── TOOLS ─── */
+#tools-section{display:none;margin-bottom:36px}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:14px}
+.tcard2{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;transition:var(--t);position:relative;overflow:hidden}
+.tcard2::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--blue),var(--accent),transparent);transform:scaleX(0);transition:var(--t);transform-origin:left}
+.tcard2:hover::after,.tcard2.on::after{transform:scaleX(1)}
+.tcard2:hover{border-color:var(--border2)}
+.tcard2.on{border-color:var(--blue2);box-shadow:0 0 16px var(--blue3)88}
+.thead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.tname2{font-family:var(--fh);font-size:.76rem;letter-spacing:.12em;color:var(--steel)}
+.ttog{width:36px;height:20px;background:#0a1525;border:1px solid var(--border);border-radius:10px;cursor:pointer;position:relative;transition:var(--t);flex-shrink:0}
+.ttog.on{background:var(--blue3);border-color:var(--blue2)}
+.ttog::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--text-dim);border-radius:50%;transition:var(--t)}
+.ttog.on::after{left:18px;background:var(--accent);box-shadow:var(--glowA)}
+.srow{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.srow:last-of-type{margin-bottom:0}
+.slbl{font-size:.76rem;color:var(--text-dim);width:58px;flex-shrink:0}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:var(--bg3);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--blue);box-shadow:0 0 5px var(--blue);cursor:pointer}
+input[type=range].r2::-webkit-slider-thumb{background:var(--accent);box-shadow:0 0 5px var(--accent)}
+input[type=range].r3::-webkit-slider-thumb{background:var(--steel);box-shadow:0 0 5px var(--steel)}
+.sval{font-family:var(--fh);font-size:.74rem;color:var(--blue);width:50px;text-align:right;flex-shrink:0}
+.tdesc{font-size:.76rem;color:var(--text-dim);margin-top:10px;line-height:1.5}
+
+/* ─── PRESETS ─── */
+.prbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;align-items:center}
+.prbar label{font-size:.74rem;color:var(--text-dim);letter-spacing:.1em}
+.pbtn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 14px;border-radius:20px;cursor:pointer;font-family:var(--fb);font-size:.76rem;letter-spacing:.07em;transition:var(--t)}
+.pbtn:hover{border-color:var(--blue2);color:var(--steel)}
+.pbtn.on{background:var(--blue3)44;border-color:var(--blue);color:var(--accent)}
+
+/* ─── PROCESS ─── */
+#process-section{display:none;margin-bottom:36px;text-align:center}
+.pbtn2{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;border:none;padding:15px 56px;border-radius:5px;font-family:var(--fh);font-size:.95rem;letter-spacing:.18em;cursor:pointer;transition:var(--t);position:relative;overflow:hidden}
+.pbtn2::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent),var(--blue2));opacity:0;transition:var(--t)}
+.pbtn2 span{position:relative;z-index:1}
+.pbtn2:hover::before{opacity:.25}
+.pbtn2:hover{box-shadow:var(--glow);transform:translateY(-2px)}
+.pbtn2:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.pgwrap{margin-top:20px;display:none;max-width:500px;margin-left:auto;margin-right:auto}
+.pgtrack{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;border:1px solid var(--border)}
+.pgfill{height:100%;background:linear-gradient(90deg,var(--blue3),var(--blue),var(--accent));width:0%;transition:width .35s;box-shadow:0 0 6px var(--blue)66}
+.pgtext{margin-top:8px;font-family:var(--fh);font-size:.74rem;color:var(--blue);letter-spacing:.1em}
+
+/* ─── PREVIEW ─── */
+#preview-section{display:none;margin-bottom:36px}
+.pvcard{background:var(--card);border:1px solid var(--blue2);border-radius:var(--r);padding:22px;box-shadow:var(--glow);position:relative;overflow:hidden}
+.pvcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue3),var(--blue),var(--accent),var(--blue),var(--blue3))}
+.pvhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.pvtitle{font-family:var(--fh);font-size:.95rem;color:var(--accent)}
+.pvbadge{background:var(--blue3)44;border:1px solid var(--blue2);border-radius:20px;padding:4px 14px;font-size:.7rem;letter-spacing:.12em;color:var(--steel)}
+.plctrl{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.plbtn{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;transition:var(--t);flex-shrink:0;line-height:1}
+.plbtn:hover{box-shadow:var(--glow);transform:scale(1.06)}
+.plseek{flex:1}
+.pltime{font-family:var(--fh);font-size:.72rem;color:var(--text-dim);width:88px;text-align:right}
+.cmpgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.cmpitem{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:11px;text-align:center}
+.cmpitem label{font-size:.7rem;letter-spacing:.1em;color:var(--text-dim);display:block;margin-bottom:3px}
+.cmpitem strong{font-family:var(--fh);font-size:.9rem;color:var(--steel)}
+
+/* ─── DOWNLOAD ─── */
+#download-section{display:none;margin-bottom:36px}
+.dlgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.dlcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:22px;text-align:center;transition:var(--t)}
+.dlcard:hover{border-color:var(--blue2);box-shadow:var(--glow);transform:translateY(-3px)}
+.dlicon{font-size:2.4rem;margin-bottom:10px;display:block}
+.dlfmt{font-family:var(--fh);font-size:.95rem;color:var(--blue);margin-bottom:4px}
+.dldesc{font-size:.76rem;color:var(--text-dim);line-height:1.45}
+.dlbtn{margin-top:14px;color:#fff;border:none;padding:10px 20px;border-radius:4px;font-family:var(--fh);font-size:.72rem;letter-spacing:.12em;cursor:pointer;transition:var(--t);width:100%}
+.dlbtn.b1{background:linear-gradient(135deg,var(--blue2),var(--blue))}
+.dlbtn.b2{background:linear-gradient(135deg,#1a3d6e,#2a6ba8)}
+.dlbtn.b3{background:linear-gradient(135deg,#0d2f55,#1e4d8a)}
+.dlbtn:hover{box-shadow:var(--glow)}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;bottom:22px;right:20px;background:var(--card2);border:1px solid var(--blue2);border-radius:4px;padding:12px 18px;font-family:var(--fh);font-size:.74rem;letter-spacing:.08em;color:var(--steel);box-shadow:var(--glow);z-index:9000;transform:translateY(80px);opacity:0;transition:.38s ease}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{border-color:#e05050;color:#f08080;box-shadow:0 0 10px #e0505044}
+
+/* ─── CORNER DECO ─── */
+.cdeco{position:relative}
+.cdeco::before,.cdeco::after{content:'';position:absolute;width:14px;height:14px;border-color:var(--blue2);border-style:solid}
+.cdeco::before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.cdeco::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+
+/* ─── FOOTER ─── */
+footer{text-align:center;padding:22px 0;border-top:1px solid var(--border);color:var(--text-dim);font-size:.75rem;letter-spacing:.09em}
+footer span{color:var(--blue)}
+
+/* ─── GLITCH ─── */
+.glitch{position:relative}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;inset:0;font:inherit;color:inherit}
+.glitch::before{color:#5cb8ff;clip-path:polygon(0 30%,100% 30%,100% 50%,0 50%);animation:g1 5s infinite;opacity:.45}
+.glitch::after{color:#2a6fc4;clip-path:polygon(0 65%,100% 65%,100% 80%,0 80%);animation:g2 5s infinite;opacity:.45}
+@keyframes g1{0%,93%,100%{transform:translate(0)}94%{transform:translate(-3px,1px)}96%{transform:translate(2px,-1px)}}
+@keyframes g2{0%,93%,100%{transform:translate(0)}95%{transform:translate(3px,0)}97%{transform:translate(-2px,1px)}}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px){#app{padding:0 12px 44px}header{padding:14px 0}.logo-name{font-size:1.2rem}.tgrid{grid-template-columns:1fr}.cmpgrid{grid-template-columns:1fr}.dlgrid{grid-template-columns:1fr 1fr}.pbtn2{padding:13px 32px;font-size:.85rem}}
+@media(max-width:480px){.dlgrid{grid-template-columns:1fr}.tthumb{width:46px;height:46px;font-size:1.5rem}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="ld-disk">
+    <div class="ld-glow"></div>
+    <svg viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="46" stroke="#4d9de0" stroke-width="2.2"/>
+      <circle cx="50" cy="50" r="38" stroke="#2a6fc4" stroke-width="1" stroke-dasharray="5 7"/>
+      <circle cx="50" cy="50" r="30" stroke="#4d9de0" stroke-width="1" stroke-dasharray="2 4"/>
+      <circle cx="50" cy="50" r="22" stroke="#4d9de0" stroke-width="1.4"/>
+      <circle cx="50" cy="50" r="14" stroke="#2a6fc4" stroke-width="1"/>
+      <circle cx="50" cy="50" r="9"  fill="#4d9de011" stroke="#5cb8ff" stroke-width="2"/>
+      <circle cx="50" cy="50" r="3.5" fill="#5cb8ff"/>
+      <path d="M28 20 Q50 13 72 20" stroke="#ffffff22" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="ld-title">FAHMIMUSIC</div>
+  <div class="ld-sub">Roblox Audio Processor</div>
+  <div class="ld-waves">
+    <div class="lwb"></div><div class="lwb"></div><div class="lwb"></div><div class="lwb"></div>
+    <div class="lwb"></div><div class="lwb"></div><div class="lwb"></div><div class="lwb"></div>
+  </div>
+  <div class="ld-ptrack"><div class="ld-pfill"></div></div>
+  <div class="ld-tip">INITIALIZING AUDIO ENGINE...</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <a href="#" class="logo">
+      <svg class="logo-disk" viewBox="0 0 80 80" fill="none">
+        <circle cx="40" cy="40" r="37" stroke="#4d9de0" stroke-width="2"/>
+        <circle cx="40" cy="40" r="30" stroke="#2a6fc4" stroke-width="1" stroke-dasharray="4 6"/>
+        <circle cx="40" cy="40" r="22" stroke="#4d9de0" stroke-width="1"/>
+        <circle cx="40" cy="40" r="14" stroke="#2a6fc4" stroke-width="1"/>
+        <circle cx="40" cy="40" r="7"  fill="#4d9de011" stroke="#5cb8ff" stroke-width="1.8"/>
+        <circle cx="40" cy="40" r="2.8" fill="#5cb8ff"/>
+        <circle cx="40" cy="40" r="34" stroke="#4d9de022" stroke-width="1"/>
+        <path d="M22 17 Q40 10 58 17" stroke="#ffffff22" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="logo-name glitch" data-text="FAHMIMUSIC">FAHMIMUSIC</div>
+        <div class="logo-tag">Roblox Audio Processor</div>
+      </div>
+    </a>
+    <div class="hbadge">v2.1 MATTE BLUE EDITION</div>
+  </header>
+
+  <!-- 01 UPLOAD -->
+  <section id="upload-section">
+    <div class="sl"><span class="sn">01</span><h2>UPLOAD AUDIO</h2><div class="sln"></div></div>
+    <div class="upzone cdeco" id="upzone">
+      <input type="file" id="fileInput" accept="audio/*">
+      <span class="up-icon">🎵</span>
+      <div class="up-title">DROP FILE AUDIO DI SINI</div>
+      <div class="up-sub">atau klik area ini untuk memilih file dari perangkat</div>
+      <div class="up-cta">PILIH FILE AUDIO</div>
+      <div class="up-fmts">MP3 · WAV · OGG · FLAC · AAC · M4A</div>
+    </div>
+  </section>
+
+  <!-- 02 TRACK INFO -->
+  <section id="track-section">
+    <div class="sl"><span class="sn">02</span><h2>TRACK INFO</h2><div class="sln"></div></div>
+    <div class="tcard cdeco">
+      <div class="tthumb">🎧</div>
+      <div class="tinfo">
+        <div class="tname" id="tName">—</div>
+        <div class="tmeta">
+          <span>⏱ <span id="tDur">—</span></span>
+          <span>📦 <span id="tSize">—</span></span>
+          <span>🎛 <span id="tSR">—</span></span>
+          <span>🔊 <span id="tCh">—</span></span>
+        </div>
+        <div class="wcon"><canvas id="waveOrig" class="wc"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 TOOLS -->
+  <section id="tools-section">
+    <div class="sl"><span class="sn">03</span><h2>BYPASS TOOLS</h2><div class="sln"></div></div>
+    <div class="prbar">
+      <label>PRESET:</label>
+      <button class="pbtn on" onclick="applyPre('custom',this)">Custom</button>
+      <button class="pbtn"    onclick="applyPre('subtle',this)">Subtle</button>
+      <button class="pbtn"    onclick="applyPre('medium',this)">Medium</button>
+      <button class="pbtn"    onclick="applyPre('strong',this)">Strong</button>
+      <button class="pbtn"    onclick="applyPre('bass',this)">Bass Boost</button>
+    </div>
+    <div class="tgrid">
+      <!-- VOLUME -->
+      <div class="tcard2 on" id="c-vol">
+        <div class="thead"><span class="tname2">🔊 VOLUME</span><div class="ttog on" id="t-vol" onclick="tog('vol')"></div></div>
+        <div class="srow"><span class="slbl">Level</span><input type="range" id="s-vol" min="0" max="200" value="100" oninput="sv(this,'v-vol','%')"><span class="sval" id="v-vol">100%</span></div>
+        <div class="tdesc">Keras/kecil volume. 100% = normal.</div>
+      </div>
+      <!-- PITCH -->
+      <div class="tcard2" id="c-pit">
+        <div class="thead"><span class="tname2">🎼 PITCH SHIFT</span><div class="ttog" id="t-pit" onclick="tog('pit')"></div></div>
+        <div class="srow"><span class="slbl">Semitones</span><input type="range" class="r2" id="s-pit" min="-12" max="12" value="0" oninput="sv(this,'v-pit','st')"><span class="sval" id="v-pit">0st</span></div>
+        <div class="tdesc">Naik/turun nada. ±12 = ±1 oktaf.</div>
+      </div>
+      <!-- SPEED -->
+      <div class="tcard2" id="c-spd">
+        <div class="thead"><span class="tname2">⚡ TEMPO / SPEED</span><div class="ttog" id="t-spd" onclick="tog('spd')"></div></div>
+        <div class="srow"><span class="slbl">Speed</span><input type="range" class="r2" id="s-spd" min="50" max="200" value="100" oninput="sv(this,'v-spd','%')"><span class="sval" id="v-spd">100%</span></div>
+        <div class="tdesc">&lt;100% lebih lambat, &gt;100% lebih cepat.</div>
+      </div>
+      <!-- EQ -->
+      <div class="tcard2" id="c-eq">
+        <div class="thead"><span class="tname2">🎛 EQUALIZER</span><div class="ttog" id="t-eq" onclick="tog('eq')"></div></div>
+        <div class="srow"><span class="slbl">Bass</span><input type="range" class="r3" id="s-bas" min="-12" max="12" value="0" oninput="sv(this,'v-bas','dB')"><span class="sval" id="v-bas">0dB</span></div>
+        <div class="srow"><span class="slbl">Mid</span><input type="range" class="r3" id="s-mid" min="-12" max="12" value="0" oninput="sv(this,'v-mid','dB')"><span class="sval" id="v-mid">0dB</span></div>
+        <div class="srow"><span class="slbl">Treble</span><input type="range" class="r3" id="s-tre" min="-12" max="12" value="0" oninput="sv(this,'v-tre','dB')"><span class="sval" id="v-tre">0dB</span></div>
+        <div class="tdesc">Atur frekuensi bass / mid / treble (±12 dB).</div>
+      </div>
+      <!-- FADE -->
+      <div class="tcard2" id="c-fad">
+        <div class="thead"><span class="tname2">🌊 FADE IN/OUT</span><div class="ttog" id="t-fad" onclick="tog('fad')"></div></div>
+        <div class="srow"><span class="slbl">Fade In</span><input type="range" id="s-fin" min="0" max="100" value="0" oninput="sv(this,'v-fin','%')"><span class="sval" id="v-fin">0%</span></div>
+        <div class="srow"><span class="slbl">Fade Out</span><input type="range" id="s-fou" min="0" max="100" value="0" oninput="sv(this,'v-fou','%')"><span class="sval" id="v-fou">0%</span></div>
+        <div class="tdesc">Efek fade halus di awal dan/atau akhir.</div>
+      </div>
+      <!-- NOISE -->
+      <div class="tcard2" id="c-noi">
+        <div class="thead"><span class="tname2">🌐 NOISE FLOOR</span><div class="ttog" id="t-noi" onclick="tog('noi')"></div></div>
+        <div class="srow"><span class="slbl">Amount</span><input type="range" class="r2" id="s-noi" min="0" max="30" value="5" oninput="sv(this,'v-noi','%')"><span class="sval" id="v-noi">5%</span></div>
+        <div class="tdesc">Noise halus untuk mengubah fingerprint audio.</div>
+      </div>
+      <!-- STEREO -->
+      <div class="tcard2" id="c-ste">
+        <div class="thead"><span class="tname2">↔ STEREO WIDTH</span><div class="ttog" id="t-ste" onclick="tog('ste')"></div></div>
+        <div class="srow"><span class="slbl">Width</span><input type="range" id="s-ste" min="0" max="200" value="100" oninput="sv(this,'v-ste','%')"><span class="sval" id="v-ste">100%</span></div>
+        <div class="tdesc">0% = mono · 100% = normal · 200% = super wide.</div>
+      </div>
+      <!-- TRIM -->
+      <div class="tcard2" id="c-tri">
+        <div class="thead"><span class="tname2">✂ TRIM AUDIO</span><div class="ttog" id="t-tri" onclick="tog('tri')"></div></div>
+        <div class="srow"><span class="slbl">Start</span><input type="range" id="s-trs" min="0" max="100" value="0" oninput="sv(this,'v-trs','%')"><span class="sval" id="v-trs">0%</span></div>
+        <div class="srow"><span class="slbl">End</span><input type="range" id="s-tre2" min="0" max="100" value="100" oninput="sv(this,'v-tre2','%')"><span class="sval" id="v-tre2">100%</span></div>
+        <div class="tdesc">Potong bagian awal/akhir sebelum diproses.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 PROCESS -->
+  <section id="process-section">
+    <div class="sl"><span class="sn">04</span><h2>PROSES BYPASS</h2><div class="sln"></div></div>
+    <button class="pbtn2" id="procBtn" onclick="processAudio()"><span>⚡ PROSES BYPASS SEKARANG</span></button>
+    <div class="pgwrap" id="pgwrap">
+      <div class="pgtrack"><div class="pgfill" id="pgfill"></div></div>
+      <div class="pgtext" id="pgtext">MEMPROSES...</div>
+    </div>
+  </section>
+
+  <!-- 05 PREVIEW -->
+  <section id="preview-section">
+    <div class="sl"><span class="sn">05</span><h2>PREVIEW HASIL</h2><div class="sln"></div></div>
+    <div class="pvcard cdeco">
+      <div class="pvhead">
+        <div class="pvtitle">🎵 AUDIO HASIL BYPASS</div>
+        <div class="pvbadge">✓ BYPASS COMPLETE</div>
+      </div>
+      <canvas id="wavePrev" class="wc" style="height:64px;margin-bottom:14px"></canvas>
+      <div class="plctrl">
+        <button class="plbtn" id="plbtn" onclick="togglePlay()">▶</button>
+        <input type="range" class="plseek" id="plseek" min="0" max="100" value="0" oninput="seekAudio()">
+        <span class="pltime" id="pltime">0:00 / 0:00</span>
+      </div>
+      <div class="cmpgrid">
+        <div class="cmpitem"><label>DURASI ASLI</label><strong id="origDur">—</strong></div>
+        <div class="cmpitem"><label>DURASI HASIL</label><strong id="procDur">—</strong></div>
+      </div>
+      <p style="margin-top:14px;font-size:.78rem;color:var(--text-dim);line-height:1.5">
+        Dengarkan preview. Jika sudah oke, download di bawah ↓
+      </p>
+    </div>
+  </section>
+
+  <!-- 06 DOWNLOAD -->
+  <section id="download-section">
+    <div class="sl"><span class="sn">06</span><h2>DOWNLOAD HASIL</h2><div class="sln"></div></div>
+    <p style="color:var(--text-dim);font-size:.83rem;margin-bottom:14px;line-height:1.6">
+      Semua format berikut <strong style="color:var(--accent)">didukung Roblox</strong>. MP3 paling direkomendasikan.
+    </p>
+    <div class="dlgrid">
+      <div class="dlcard"><span class="dlicon">🎵</span><div class="dlfmt">MP3</div><div class="dldesc">Paling umum, ukuran kecil. Recommended untuk Roblox.</div><button class="dlbtn b1" onclick="downloadResult('mp3')">⬇ DOWNLOAD MP3</button></div>
+      <div class="dlcard"><span class="dlicon">🔊</span><div class="dlfmt">OGG</div><div class="dldesc">Open-source, kualitas bagus, ukuran efisien.</div><button class="dlbtn b2" onclick="downloadResult('ogg')">⬇ DOWNLOAD OGG</button></div>
+      <div class="dlcard"><span class="dlicon">💾</span><div class="dlfmt">WAV</div><div class="dldesc">Lossless. Kualitas tertinggi, ukuran lebih besar.</div><button class="dlbtn b3" onclick="downloadResult('wav')">⬇ DOWNLOAD WAV</button></div>
+    </div>
+  </section>
+
+  <footer><p>FAHMIMUSIC © 2025 — <span>Roblox Audio Processor</span> — Web Audio API</p></footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════
+   FAHMIMUSIC — Audio Engine (Fixed)
+═══════════════════════════════════════ */
+
+// ── STATE ──────────────────────────────
+let ACtx=null, origBuf=null, procBuf=null;
+let pvSrc=null, pvStart=0, pvOff=0;
+let playing=false, rafId=null, fname='output';
+
+const T={vol:true,pit:false,spd:false,eq:false,fad:false,noi:false,ste:false,tri:false};
+
+// ── LOADING ────────────────────────────
+window.addEventListener('load',()=>{
+  setTimeout(()=>document.getElementById('loading').classList.add('gone'),2700);
+});
+
+// ── AUDIO CONTEXT ──────────────────────
+function ac(){
+  if(!ACtx) ACtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(ACtx.state==='suspended') ACtx.resume();
+  return ACtx;
+}
+
+// ── UPLOAD — FIXED ─────────────────────
+(function(){
+  const zone=document.getElementById('upzone');
+  const inp=document.getElementById('fileInput');
+
+  // Zone click → open file dialog
+  zone.addEventListener('click',function(e){
+    // Only trigger if not clicking on the input itself (though it's hidden)
+    inp.click();
+  });
+
+  // Drag support
+  zone.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();zone.classList.add('drag');});
+  zone.addEventListener('dragleave',e=>{e.stopPropagation();zone.classList.remove('drag');});
+  zone.addEventListener('drop',e=>{
+    e.preventDefault();e.stopPropagation();
+    zone.classList.remove('drag');
+    const f=e.dataTransfer.files[0];
+    if(f) loadFile(f);
+  });
+
+  // File chosen via dialog — THIS is the correct handler
+  inp.addEventListener('change',function(){
+    const f=this.files[0];
+    if(f){ loadFile(f); this.value=''; }
+  });
+})();
+
+async function loadFile(file){
+  const ok=/\.(mp3|wav|ogg|flac|aac|m4a|opus|webm)$/i.test(file.name)||file.type.startsWith('audio/');
+  if(!ok){toast('Bukan file audio yang didukung!',true);return;}
+  toast('Memuat audio...');
+  fname=file.name.replace(/\.[^.]+$/,'');
+  try{
+    const ab=await file.arrayBuffer();
+    // Resume context first (required for Chrome autoplay policy)
+    ac();
+    origBuf=await ac().decodeAudioData(ab);
+    showTrack(file,origBuf);
+    toast('Audio berhasil dimuat ✓');
+  }catch(err){
+    console.error('Decode error:',err);
+    toast('Gagal membaca audio. Coba format MP3 atau WAV.',true);
+  }
+}
+
+function showTrack(file,buf){
+  document.getElementById('tName').textContent=file.name;
+  document.getElementById('tDur').textContent=fmt(buf.duration);
+  document.getElementById('tSize').textContent=(file.size/1048576).toFixed(2)+' MB';
+  document.getElementById('tSR').textContent=buf.sampleRate+' Hz';
+  document.getElementById('tCh').textContent=buf.numberOfChannels===2?'Stereo':'Mono';
+  document.getElementById('origDur').textContent=fmt(buf.duration);
+  drawWave(buf,'waveOrig','#4d9de0');
+  ['track-section','tools-section','process-section'].forEach(id=>{
+    document.getElementById(id).style.display='block';
+  });
+  document.getElementById('upzone').classList.add('loaded');
+}
+
+// ── WAVEFORM ───────────────────────────
+function drawWave(buf,id,color){
+  const cv=document.getElementById(id);
+  if(!cv) return;
+  const ctx2=cv.getContext('2d');
+  const data=buf.getChannelData(0);
+  const W=cv.parentElement.offsetWidth||560;
+  const H=cv.parentElement.offsetHeight||72;
+  cv.width=W; cv.height=H;
+  ctx2.fillStyle='#091422';ctx2.fillRect(0,0,W,H);
+  const step=Math.ceil(data.length/W);
+  const mid=H/2;
+  ctx2.strokeStyle=color;ctx2.lineWidth=1.3;ctx2.shadowBlur=6;ctx2.shadowColor=color;
+  ctx2.beginPath();
+  for(let i=0;i<W;i++){
+    let mn=1,mx=-1;
+    for(let j=0;j<step;j++){const v=data[i*step+j]||0;if(v<mn)mn=v;if(v>mx)mx=v;}
+    ctx2.moveTo(i,mid+mn*mid*.88);ctx2.lineTo(i,mid+mx*mid*.88);
+  }
+  ctx2.stroke();
+}
+
+// ── TOGGLES ────────────────────────────
+function tog(k){
+  T[k]=!T[k];
+  const t=document.getElementById('t-'+k);
+  const c=document.getElementById('c-'+k);
+  T[k]?(t.classList.add('on'),c.classList.add('on')):(t.classList.remove('on'),c.classList.remove('on'));
+}
+function sv(el,valId,unit){document.getElementById(valId).textContent=el.value+unit;}
+
+// ── PRESETS ────────────────────────────
+function applyPre(name,btn){
+  document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const P={
+    subtle:[105,1, 100,1, 0,1, 2,5, 2,105,0,100],
+    medium:[110,2, 102,3,-1,2, 5,8, 5,110,0,100],
+    strong:[120,4, 105,5,-2,4, 8,10,10,120,1,98],
+    bass:  [100,0, 100,6, 2,-2,3,6, 3,100,0,100],
+  };
+  if(!P[name]) return;
+  const p=P[name];
+  const pairs=[['s-vol','v-vol','%',p[0]],['s-pit','v-pit','st',p[1]],['s-spd','v-spd','%',p[2]],
+    ['s-bas','v-bas','dB',p[3]],['s-mid','v-mid','dB',p[4]],['s-tre','v-tre','dB',p[5]],
+    ['s-fin','v-fin','%',p[6]],['s-fou','v-fou','%',p[7]],['s-noi','v-noi','%',p[8]],
+    ['s-ste','v-ste','%',p[9]],['s-trs','v-trs','%',p[10]],['s-tre2','v-tre2','%',p[11]]];
+  pairs.forEach(([sid,vid,u,v])=>{
+    const e=document.getElementById(sid);if(e){e.value=v;document.getElementById(vid).textContent=v+u;}
+  });
+  if(name==='medium'||name==='strong'){
+    Object.keys(T).forEach(k=>{if(!T[k])tog(k);});
+  }
+}
+
+// ── PROCESS ────────────────────────────
+async function processAudio(){
+  if(!origBuf){toast('Upload audio dulu!',true);return;}
+  const btn=document.getElementById('procBtn');
+  btn.disabled=true;
+  const pw=document.getElementById('pgwrap');
+  pw.style.display='block';
+  try{
+    pg(10,'Membaca parameter...');
+    const p=getP();
+    pg(20,'Trim audio...');
+    let buf=trimB(origBuf,p);
+    pg(40,'EQ & volume...');
+    buf=await offProc(buf,p);
+    pg(76,'Noise & fade...');
+    buf=noiseFade(buf,p);
+    pg(96,'Finalisasi...');
+    await new Promise(r=>setTimeout(r,80));
+    procBuf=buf;
+    pg(100,'SELESAI ✓');
+    drawWave(procBuf,'wavePrev','#5cb8ff');
+    document.getElementById('procDur').textContent=fmt(procBuf.duration);
+    document.getElementById('preview-section').style.display='block';
+    document.getElementById('download-section').style.display='block';
+    document.getElementById('preview-section').scrollIntoView({behavior:'smooth',block:'start'});
+    toast('Bypass selesai! ✓');
+  }catch(err){
+    toast('Error: '+err.message,true);
+    console.error(err);
+  }finally{
+    setTimeout(()=>{btn.disabled=false;pw.style.display='none';},1500);
+  }
+}
+
+function getP(){
+  const g=id=>parseFloat(document.getElementById(id).value);
+  return{
+    vol:T.vol?g('s-vol')/100:1,
+    pit:T.pit?g('s-pit'):0,
+    spd:T.spd?g('s-spd')/100:1,
+    bas:T.eq?g('s-bas'):0,mid:T.eq?g('s-mid'):0,tre:T.eq?g('s-tre'):0,
+    fi:T.fad?g('s-fin')/100:0,fo:T.fad?g('s-fou')/100:0,
+    noi:T.noi?g('s-noi')/100:0,
+    ste:T.ste?g('s-ste')/100:1,
+    ts:T.tri?g('s-trs')/100:0,te:T.tri?g('s-tre2')/100:1,
+  };
+}
+
+function trimB(buf,p){
+  const nc=buf.numberOfChannels,sr=buf.sampleRate,tot=buf.length;
+  const s=Math.floor(p.ts*tot),e=Math.min(tot,Math.floor(p.te*tot));
+  const len=e-s;if(len<=0)return buf;
+  const nb=new AudioBuffer({numberOfChannels:nc,length:len,sampleRate:sr});
+  for(let c=0;c<nc;c++)nb.copyToChannel(buf.getChannelData(c).slice(s,e),c);
+  return nb;
+}
+
+async function offProc(buf,p){
+  const nc=buf.numberOfChannels,sr=buf.sampleRate;
+  const rate=Math.pow(2,p.pit/12)*p.spd;
+  const outLen=Math.max(1,Math.ceil(buf.duration/rate*sr));
+  const off=new OfflineAudioContext(nc,outLen,sr);
+  const src=off.createBufferSource();src.buffer=buf;src.playbackRate.value=rate;
+  const gn=off.createGain();gn.gain.value=p.vol;
+  const bf=off.createBiquadFilter();bf.type='lowshelf';bf.frequency.value=200;bf.gain.value=p.bas;
+  const mf=off.createBiquadFilter();mf.type='peaking';mf.frequency.value=1000;mf.Q.value=1;mf.gain.value=p.mid;
+  const tf=off.createBiquadFilter();tf.type='highshelf';tf.frequency.value=4000;tf.gain.value=p.tre;
+  src.connect(bf);bf.connect(mf);mf.connect(tf);tf.connect(gn);gn.connect(off.destination);
+  src.start(0);
+  return off.startRendering();
+}
+
+function noiseFade(buf,p){
+  const nc=buf.numberOfChannels,len=buf.length,sr=buf.sampleRate;
+  const out=new AudioBuffer({numberOfChannels:nc,length:len,sampleRate:sr});
+  for(let c=0;c<nc;c++){
+    const d=buf.getChannelData(c).slice();
+    if(nc===2&&c===1&&p.ste!==1){
+      const c0=buf.getChannelData(0),w=p.ste;
+      for(let i=0;i<len;i++){const mid=(c0[i]+d[i])/2,side=(d[i]-c0[i])/2;d[i]=mid+side*w;}
+    }
+    if(p.fi>0){const fl=Math.floor(len*p.fi);for(let i=0;i<fl;i++)d[i]*=i/fl;}
+    if(p.fo>0){const fl=Math.floor(len*p.fo),st=len-fl;for(let i=0;i<fl;i++)d[st+i]*=(fl-i)/fl;}
+    if(p.noi>0){const nl=p.noi*0.008;for(let i=0;i<len;i++){d[i]+=(Math.random()*2-1)*nl;d[i]=Math.max(-1,Math.min(1,d[i]));}}
+    out.copyToChannel(d,c);
+  }
+  return out;
+}
+
+function pg(pct,msg){
+  document.getElementById('pgfill').style.width=pct+'%';
+  document.getElementById('pgtext').textContent=msg.toUpperCase();
+}
+
+// ── PREVIEW PLAYER ─────────────────────
+function togglePlay(){if(!procBuf)return;playing?stopPv():startPv();}
+
+function startPv(){
+  const c=ac();
+  if(pvSrc){try{pvSrc.stop();}catch(e){}pvSrc.disconnect();}
+  pvSrc=c.createBufferSource();pvSrc.buffer=procBuf;pvSrc.connect(c.destination);
+  pvStart=c.currentTime-pvOff;
+  pvSrc.start(0,Math.max(0,pvOff));
+  playing=true;document.getElementById('plbtn').textContent='⏸';
+  pvSrc.onended=()=>{
+    if(playing){playing=false;pvOff=0;
+      document.getElementById('plbtn').textContent='▶';
+      cancelAnimationFrame(rafId);
+      document.getElementById('plseek').value=0;
+    }
+  };
+  tick();
+}
+
+function stopPv(){
+  if(pvSrc){pvOff=Math.min(procBuf.duration,ac().currentTime-pvStart);try{pvSrc.stop();}catch(e){}}
+  playing=false;document.getElementById('plbtn').textContent='▶';cancelAnimationFrame(rafId);
+}
+
+function seekAudio(){
+  pvOff=parseFloat(document.getElementById('plseek').value)/100*procBuf.duration;
+  if(playing){stopPv();startPv();}
+}
+
+function tick(){
+  if(!playing)return;
+  const el=Math.min(procBuf.duration,ac().currentTime-pvStart);
+  document.getElementById('plseek').value=(el/procBuf.duration)*100;
+  document.getElementById('pltime').textContent=fmt(el)+' / '+fmt(procBuf.duration);
+  rafId=requestAnimationFrame(tick);
+}
+
+// ── DOWNLOAD ───────────────────────────
+async function downloadResult(fmt2){
+  if(!procBuf){toast('Proses audio dulu!',true);return;}
+  const base=fname+'_bypass';
+  if(fmt2==='wav'){triggerDL(toWAV(procBuf),base+'.wav','audio/wav');return;}
+  try{
+    let mime=fmt2==='ogg'
+      ?(MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')?'audio/ogg;codecs=opus':MediaRecorder.isTypeSupported('audio/ogg')?'audio/ogg':'audio/webm;codecs=opus')
+      :(MediaRecorder.isTypeSupported('audio/mp4')?'audio/mp4':MediaRecorder.isTypeSupported('audio/mpeg')?'audio/mpeg':'audio/webm;codecs=opus');
+    const c2=ac(),dest=c2.createMediaStreamDestination(),src2=c2.createBufferSource();
+    src2.buffer=procBuf;src2.connect(dest);
+    const rec=new MediaRecorder(dest.stream,{mimeType:mime});
+    const chunks=[];
+    rec.ondataavailable=e=>chunks.push(e.data);
+    rec.onstop=()=>{const ext=fmt2==='ogg'?'.ogg':'.mp3';triggerDL(new Blob(chunks,{type:mime}),base+ext,mime);};
+    rec.start();src2.start(0);src2.onended=()=>rec.stop();
+    toast('Merekam audio... harap tunggu');
+  }catch(e){
+    toast('Fallback ke WAV',true);
+    triggerDL(toWAV(procBuf),base+'.wav','audio/wav');
+  }
+}
+
+function toWAV(buf){
+  const nc=buf.numberOfChannels,sr=buf.sampleRate,len=buf.length;
+  let s;
+  if(nc===2){const l=buf.getChannelData(0),r=buf.getChannelData(1);s=new Float32Array(len*2);for(let i=0;i<len;i++){s[i*2]=l[i];s[i*2+1]=r[i];}}
+  else s=buf.getChannelData(0);
+  const ab=new ArrayBuffer(44+s.length*2),v=new DataView(ab);
+  const ws=(o,x)=>{for(let i=0;i<x.length;i++)v.setUint8(o+i,x.charCodeAt(i));};
+  ws(0,'RIFF');v.setUint32(4,36+s.length*2,true);ws(8,'WAVE');
+  ws(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nc,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*nc*2,true);v.setUint16(32,nc*2,true);v.setUint16(34,16,true);
+  ws(36,'data');v.setUint32(40,s.length*2,true);
+  for(let i=0;i<s.length;i++){const x=Math.max(-1,Math.min(1,s[i]));v.setInt16(44+i*2,x<0?x*0x8000:x*0x7FFF,true);}
+  return new Blob([ab],{type:'audio/wav'});
+}
+
+function triggerDL(blob,name,type){
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),8000);
+  toast('⬇ Download: '+name);
+}
+
+function fmt(s){
+  if(isNaN(s)||s<0)return'0:00';
+  return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+}
+
+function toast(msg,isErr){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show'+(isErr?' err':'');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3600);
+}
+</script>
+</body>
+</html>
